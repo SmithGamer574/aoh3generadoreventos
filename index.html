@@ -147,11 +147,13 @@
             "civ_gold_over", "civ_is_at_war", "civs_are_neighbors", "year_over"
         ];
 
-        // Lista de outcomes (incluye declare_war2)
+        // Lista de outcomes (incluye declare_war2, add_alliance, annex_by_civ_from_civ)
         const outcomes = [
-            "gold", "legacy", "manpower", "inflation", "declare_war",
-            "declare_war2", "add_alliance", "change_ideology", "annex", "add_general",
-            "province_economy", "bonus_monthly_income"
+        "gold", "legacy", "manpower", "inflation", "declare_war",
+        "declare_war2", "add_alliance", "change_ideology", "annex", "add_general",
+        "province_economy", "bonus_monthly_income", "player_set_civ", "ai_aggression", 
+        "add_non_aggression", "add_military_access", "add_guarantee", "add_truce",
+        "change_religion", "annex_civ", "annex_by_civ", "set_civ_tag", "run_event", 
         ];
 
         let triggerCount = 0;
@@ -232,10 +234,16 @@
 
         function handleOutcomeChange(select, outcomeId) {
             const valueContainer = document.getElementById(`outcome-value-${outcomeId}`);
-            if (select.value === "declare_war2") {
+            if (select.value === "declare_war2" || select.value === "add_alliance" || select.value === "add_truce" || select.value === "add_defensive_pact" || select.value === "add_military_access" || select.value === "add_non_aggression" || select.value === "add_guarantee") {
                 valueContainer.innerHTML = `
                     <label>Tag 1:</label><input type="text" class="outcome-tag1" oninput="updateOutput()">
                     <label>Tag 2:</label><input type="text" class="outcome-tag2" oninput="updateOutput()">
+                `;
+            } else if (select.value === "annex_by_civ_from_civ") {
+                valueContainer.innerHTML = `
+                    <label>Tag 1:</label><input type="text" class="outcome-tag1" oninput="updateOutput()">
+                    <label>Tag 2:</label><input type="text" class="outcome-tag2" oninput="updateOutput()">
+                    <label>Provincias (ej. 646;652;647):</label><input type="text" class="outcome-provinces" oninput="updateOutput()">
                 `;
             } else {
                 valueContainer.innerHTML = `
@@ -278,11 +286,18 @@
                 const outcomes = div.querySelectorAll(".outcome");
                 outcomes.forEach(outcome => {
                     const select = outcome.querySelector(".outcome-select");
-                    if (select.value === "declare_war2") {
+                    if (select.value === "declare_war2" || select.value === "add_alliance") {
                         const tag1 = outcome.querySelector(".outcome-tag1")?.value;
                         const tag2 = outcome.querySelector(".outcome-tag2")?.value;
                         if (tag1 && tag2) {
                             output += `${select.value}=${tag1}=${tag2}\n`;
+                        }
+                    } else if (select.value === "annex_by_civ_from_civ") {
+                        const tag1 = outcome.querySelector(".outcome-tag1")?.value;
+                        const tag2 = outcome.querySelector(".outcome-tag2")?.value;
+                        const provinces = outcome.querySelector(".outcome-provinces")?.value;
+                        if (tag1 && tag2 && provinces) {
+                            output += `${select.value}=${tag1}=${tag2}=${provinces}\n`;
                         }
                     } else {
                         const input = outcome.querySelector(".outcome-single");
