@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Generador de Eventos - Age of History 3</title>
+    <style>
+        /* Modo oscuro */
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #1e1e2e;
+            color: #cdd6f4;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        h1, h2 {
+            color: #89b4fa;
+            border-bottom: 2px solid #313244;
+            padding-bottom: 5px;
+        }
+        .section {
+            background-color: #313244;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+        label {
+            display: inline-block;
+            width: 150px;
+            color: #94e2d5;
+            font-weight: 500;
+        }
+        input[type="text"],
+        input[type="number"],
+        textarea,
+        select {
+            background-color: #45475a;
+            border: 1px solid #585b70;
+            color: #cdd6f4;
+            padding: 8px;
+            border-radius: 4px;
+            width: calc(100% - 170px);
+            margin-bottom: 10px;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        textarea:focus,
+        select:focus {
+            border-color: #89b4fa;
+            outline: none;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        input[type="checkbox"] {
+            accent-color: #89b4fa;
+        }
+        button {
+            background-color: #585b70;
+            color: #cdd6f4;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #89b4fa;
+            color: #1e1e2e;
+        }
+        .trigger, .option {
+            background-color: #3b3e52;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #89b4fa;
+        }
+        .outcome {
+            background-color: #45475a;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        #output {
+            background-color: #2e2e3e;
+            border: 1px solid #585b70;
+            color: #cdd6f4;
+            font-family: 'Consolas', monospace;
+            width: 100%;
+            height: 400px;
+            border-radius: 4px;
+            padding: 10px;
+        }
+        @media (max-width: 600px) {
+            label {
+                width: 100%;
+                margin-bottom: 5px;
+            }
+            input[type="text"],
+            input[type="number"],
+            textarea,
+            select {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Generador de Eventos para Age of History 3</h1>
+
+    <div class="section">
+        <h2>Datos del Evento</h2>
+        <label>ID:</label><input type="text" id="eventId"><br>
+        <label>Título:</label><input type="text" id="eventTitle"><br>
+        <label>Descripción:</label><textarea id="eventDesc"></textarea><br>
+        <label>Imagen:</label><input type="text" id="eventImage"><br>
+        <label>Mostrar en Misiones:</label><input type="checkbox" id="showMissions"><br>
+        <label>Solo una vez:</label><input type="checkbox" id="onlyOnce"><br>
+        <label>Imagen de Misión:</label><input type="text" id="missionImage"><br>
+    </div>
+
+    <div class="section">
+        <h2>Triggers</h2>
+        <button onclick="addTrigger()">Añadir Trigger</button>
+        <div id="triggers"></div>
+    </div>
+
+    <div class="section">
+        <h2>Opciones</h2>
+        <button onclick="addOption()">Añadir Opción</button>
+        <div id="options"></div>
+    </div>
+
+    <div class="section">
+        <h2>Resultado</h2>
+        <textarea id="output" readonly></textarea><br>
+        <button onclick="copyOutput()">Copiar Texto</button>
+    </div>
+
+    <script>
+        // Lista de triggers (ejemplo reducido)
+        const triggers = [
+            "has_variable", "is_civ", "civ_provinces_over", "civ_population_over",
+            "civ_gold_over", "civ_is_at_war", "civs_are_neighbors", "year_over"
+        ];
+
+        // Lista de outcomes (incluye declare_war2)
+        const outcomes = [
+            "gold", "legacy", "manpower", "inflation", "declare_war",
+            "declare_war2", "add_alliance", "change_ideology", "annex", "add_general",
+            "province_economy", "bonus_monthly_income"
+        ];
+
+        let triggerCount = 0;
+        let optionCount = 0;
+        let outcomeCount = 0;
+
+        function addTrigger() {
+            triggerCount++;
+            const triggerDiv = document.createElement("div");
+            triggerDiv.className = "trigger";
+            triggerDiv.id = `trigger-${triggerCount}`;
+            triggerDiv.innerHTML = `
+                <label>Trigger:</label>
+                <select onchange="updateOutput()">
+                    <option value="">Seleccionar Trigger</option>
+                    ${triggers.map(t => `<option value="${t}">${t}</option>`).join("")}
+                </select>
+                <label>Valor:</label><input type="text" oninput="updateOutput()">
+                <button onclick="removeTrigger(${triggerCount})">Eliminar</button>
+            `;
+            document.getElementById("triggers").appendChild(triggerDiv);
+            updateOutput();
+        }
+
+        function removeTrigger(id) {
+            const triggerDiv = document.getElementById(`trigger-${id}`);
+            triggerDiv.remove();
+            updateOutput();
+        }
+
+        function addOption() {
+            optionCount++;
+            const optionDiv = document.createElement("div");
+            optionDiv.className = "option";
+            optionDiv.id = `option-${optionCount}`;
+            optionDiv.innerHTML = `
+                <label>Nombre:</label><input type="text" class="option-name" oninput="updateOutput()"><br>
+                <label>AI (0-100):</label><input type="number" min="0" max="100" class="option-ai" oninput="updateOutput()"><br>
+                <button onclick="addOutcome(${optionCount})">Añadir Outcome</button>
+                <div class="outcomes" id="outcomes-${optionCount}"></div>
+                <button onclick="removeOption(${optionCount})">Eliminar Opción</button>
+            `;
+            document.getElementById("options").appendChild(optionDiv);
+            updateOutput();
+        }
+
+        function removeOption(id) {
+            const optionDiv = document.getElementById(`option-${id}`);
+            optionDiv.remove();
+            updateOutput();
+        }
+
+        function addOutcome(optionId) {
+            outcomeCount++;
+            const outcomeDiv = document.createElement("div");
+            outcomeDiv.className = "outcome";
+            outcomeDiv.id = `outcome-${outcomeCount}`;
+            outcomeDiv.innerHTML = `
+                <label>Outcome:</label>
+                <select class="outcome-select" onchange="handleOutcomeChange(this, ${outcomeCount}); updateOutput()">
+                    <option value="">Seleccionar Outcome</option>
+                    ${outcomes.map(o => `<option value="${o}">${o}</option>`).join("")}
+                </select>
+                <div class="outcome-value" id="outcome-value-${outcomeCount}">
+                    <label>Valor:</label><input type="text" class="outcome-single" oninput="updateOutput()">
+                </div>
+                <button onclick="removeOutcome(${outcomeCount})">Eliminar</button>
+            `;
+            document.getElementById(`outcomes-${optionId}`).appendChild(outcomeDiv);
+            updateOutput();
+        }
+
+        function removeOutcome(id) {
+            const outcomeDiv = document.getElementById(`outcome-${id}`);
+            outcomeDiv.remove();
+            updateOutput();
+        }
+
+        function handleOutcomeChange(select, outcomeId) {
+            const valueContainer = document.getElementById(`outcome-value-${outcomeId}`);
+            if (select.value === "declare_war2") {
+                valueContainer.innerHTML = `
+                    <label>Tag 1:</label><input type="text" class="outcome-tag1" oninput="updateOutput()">
+                    <label>Tag 2:</label><input type="text" class="outcome-tag2" oninput="updateOutput()">
+                `;
+            } else {
+                valueContainer.innerHTML = `
+                    <label>Valor:</label><input type="text" class="outcome-single" oninput="updateOutput()">
+                `;
+            }
+        }
+
+        function updateOutput() {
+            let output = "";
+            // Campos básicos
+            output += `id=${document.getElementById("eventId").value || ""}\n`;
+            output += `title=${document.getElementById("eventTitle").value || ""}\n`;
+            output += `desc=${document.getElementById("eventDesc").value || ""}\n`;
+            output += `image=${document.getElementById("eventImage").value || ""}\n`;
+            output += `show_in_missions=${document.getElementById("showMissions").checked}\n`;
+            output += `mission_image=${document.getElementById("missionImage").value || ""}\n`;
+            output += `only_once=${document.getElementById("onlyOnce").checked}\n\n`;
+
+            // Triggers
+            output += `trigger_and\n`;
+            const triggerDivs = document.querySelectorAll(".trigger");
+            triggerDivs.forEach(div => {
+                const select = div.querySelector("select");
+                const input = div.querySelector("input[type='text']");
+                if (select.value && input.value) {
+                    output += `next_and\n${select.value}=${input.value}\n`;
+                }
+            });
+            output += `trigger_and_end\n\n`;
+
+            // Opciones
+            const optionDivs = document.querySelectorAll(".option");
+            optionDivs.forEach(div => {
+                const name = div.querySelector(".option-name").value;
+                const ai = div.querySelector(".option-ai").value;
+                output += `option_btn\n`;
+                output += `name=${name || ""}\n`;
+                output += `ai=${ai || 2}\n`;
+                const outcomes = div.querySelectorAll(".outcome");
+                outcomes.forEach(outcome => {
+                    const select = outcome.querySelector(".outcome-select");
+                    if (select.value === "declare_war2") {
+                        const tag1 = outcome.querySelector(".outcome-tag1")?.value;
+                        const tag2 = outcome.querySelector(".outcome-tag2")?.value;
+                        if (tag1 && tag2) {
+                            output += `${select.value}=${tag1}=${tag2}\n`;
+                        }
+                    } else {
+                        const input = outcome.querySelector(".outcome-single");
+                        if (select.value && input?.value) {
+                            output += `${select.value}=${input.value}\n`;
+                        }
+                    }
+                });
+                output += `option_end\n\n`;
+            });
+
+            document.getElementById("output").value = output;
+        }
+
+        function copyOutput() {
+            const output = document.getElementById("output");
+            output.select();
+            document.execCommand("copy");
+            alert("¡Texto copiado al portapapeles!");
+        }
+
+        // Actualizar salida cuando cambian los campos básicos
+        document.querySelectorAll("#eventId, #eventTitle, #eventDesc, #eventImage, #missionImage")
+            .forEach(input => input.addEventListener("input", updateOutput));
+        document.querySelectorAll("#showMissions, #onlyOnce")
+            .forEach(checkbox => checkbox.addEventListener("change", updateOutput));
+    </script>
+</body>
+</html>
